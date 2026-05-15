@@ -1,38 +1,47 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useNotificationStore } from '@/stores/notification'
-import { ElMessage, ElTable, ElTableColumn, ElPagination } from 'element-plus'
+import { ElTable, ElTableColumn, ElPagination } from 'element-plus'
 import { CheckCircle, Info, AlertTriangle, XCircle } from 'lucide-vue-next'
 import type { Notification } from '@/types'
 
 const notificationStore = useNotificationStore()
 
+// 通知列表和分页
 const notifications = ref<Notification[]>([])
 const total = ref(0)
 const page = ref(1)
 const size = ref(10)
 
+/**
+ * 获取通知列表
+ */
 const fetchNotifications = async () => {
   try {
     const response = await notificationStore.getNotifications(page.value - 1, size.value)
     notifications.value = response.content
     total.value = response.totalElements
   } catch (error) {
-    console.error('Failed to fetch notifications:', error)
+    console.error('获取通知列表失败:', error)
   }
 }
 
+/**
+ * 标记通知为已读
+ */
 const markAsRead = async (notification: Notification) => {
   if (notification.isRead) return
   try {
     await notificationStore.markAsRead(notification.id)
     notification.isRead = true
-    ElMessage.success('已标记为已读')
   } catch (error) {
-    ElMessage.error('操作失败')
+    console.error('标记已读失败:', error)
   }
 }
 
+/**
+ * 获取通知类型图标
+ */
 const getTypeIcon = (type: string) => {
   switch (type) {
     case 'SUCCESS': return CheckCircle
@@ -42,6 +51,9 @@ const getTypeIcon = (type: string) => {
   }
 }
 
+/**
+ * 获取通知类型样式
+ */
 const getTypeClass = (type: string) => {
   switch (type) {
     case 'SUCCESS': return 'text-green-600 bg-green-100'
@@ -51,6 +63,9 @@ const getTypeClass = (type: string) => {
   }
 }
 
+/**
+ * 获取通知类型文本
+ */
 const getTypeText = (type: string) => {
   switch (type) {
     case 'SUCCESS': return '成功'
@@ -60,6 +75,9 @@ const getTypeText = (type: string) => {
   }
 }
 
+/**
+ * 格式化日期
+ */
 const formatDate = (dateStr: string) => {
   const date = new Date(dateStr)
   return date.toLocaleString('zh-CN', {
@@ -78,6 +96,7 @@ onMounted(() => {
 
 <template>
   <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+    <!-- 页面头部 -->
     <div class="p-6 border-b border-gray-100">
       <div class="flex items-center justify-between">
         <h2 class="text-xl font-semibold text-gray-800">通知中心</h2>
@@ -87,6 +106,7 @@ onMounted(() => {
       </div>
     </div>
     
+    <!-- 通知列表 -->
     <div class="p-6">
       <div class="space-y-4">
         <div 
@@ -101,9 +121,11 @@ onMounted(() => {
           @click="markAsRead(notification)"
         >
           <div class="flex items-start gap-4">
+            <!-- 通知类型图标 -->
             <div :class="['w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0', getTypeClass(notification.type)]">
               <component :is="getTypeIcon(notification.type)" class="w-5 h-5" />
             </div>
+            <!-- 通知内容 -->
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2">
                 <span :class="['px-2 py-0.5 rounded text-xs font-medium', getTypeClass(notification.type)]">
@@ -114,6 +136,7 @@ onMounted(() => {
               <p class="text-sm text-gray-600 mt-2">{{ notification.content }}</p>
               <div class="flex items-center gap-2 mt-3">
                 <span class="text-xs text-gray-400">{{ formatDate(notification.createdAt) }}</span>
+                <!-- 未读标记 -->
                 <span 
                   v-if="!notification.isRead"
                   class="px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full"
@@ -125,12 +148,14 @@ onMounted(() => {
           </div>
         </div>
         
+        <!-- 空状态 -->
         <div v-if="notifications.length === 0" class="text-center py-12 text-gray-500">
           <Info class="w-12 h-12 mx-auto mb-4 text-gray-300" />
           <p>暂无通知</p>
         </div>
       </div>
       
+      <!-- 分页组件 -->
       <div v-if="total > 0" class="flex justify-center mt-6">
         <ElPagination
           v-model:current-page="page"

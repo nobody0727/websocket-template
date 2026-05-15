@@ -3,6 +3,8 @@ server:
 
 spring:
   datasource:
+    # MySQL数据库连接配置
+    # 请根据实际情况修改数据库名称、用户名和密码
     url: jdbc:mysql://localhost:3306/example_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
     username: admin
     password: password
@@ -10,16 +12,20 @@ spring:
   
   jpa:
     hibernate:
-      ddl-auto: update
-    show-sql: true
+      ddl-auto: update  # 自动更新数据库表结构（开发环境使用）
+    show-sql: true     # 显示SQL语句
     properties:
       hibernate:
-        format_sql: true
+        format_sql: true  # 格式化SQL输出
 
+# JWT配置
 jwt:
+  # JWT密钥（生产环境请使用更复杂的密钥）
   secret: your-256-bit-secret-key-for-jwt-token-generation-change-it-in-production
+  # 令牌过期时间（24小时）
   expiration: 86400000
 
+# 日志配置
 logging:
   level:
-    com.example.app: DEBUG
+    com.example.app: DEBUG  # 应用日志级别

@@ -5,9 +5,12 @@ import { ElMessage, ElModal, ElForm, ElFormItem, ElInput, ElSelect, ElButton, El
 import { Plus, Edit, Trash2, User } from 'lucide-vue-next'
 import type { User as UserType } from '@/types'
 
+// 用户列表
 const users = ref<UserType[]>([])
+// 模态框状态
 const showModal = ref(false)
 const editingUser = ref<UserType | null>(null)
+// 表单数据
 const form = ref({
   username: '',
   email: '',
@@ -15,15 +18,21 @@ const form = ref({
   role: 'USER'
 })
 
+/**
+ * 获取用户列表
+ */
 const fetchUsers = async () => {
   try {
     const response = await axios.get('/api/users')
     users.value = response.data
   } catch (error) {
-    console.error('Failed to fetch users:', error)
+    console.error('获取用户列表失败:', error)
   }
 }
 
+/**
+ * 打开新建用户模态框
+ */
 const openCreateModal = () => {
   editingUser.value = null
   form.value = {
@@ -35,6 +44,9 @@ const openCreateModal = () => {
   showModal.value = true
 }
 
+/**
+ * 打开编辑用户模态框
+ */
 const openEditModal = (user: UserType) => {
   editingUser.value = user
   form.value = {
@@ -46,12 +58,16 @@ const openEditModal = (user: UserType) => {
   showModal.value = true
 }
 
+/**
+ * 保存用户（新建或更新）
+ */
 const saveUser = async () => {
   if (!form.value.username || !form.value.email) {
     ElMessage.warning('请输入用户名和邮箱')
     return
   }
   
+  // 新建用户时必须输入密码
   if (!editingUser.value && !form.value.password) {
     ElMessage.warning('请输入密码')
     return
@@ -59,6 +75,7 @@ const saveUser = async () => {
   
   try {
     const data = { ...form.value }
+    // 编辑时如果密码为空，不更新密码
     if (!data.password) {
       delete data.password
     }
@@ -77,6 +94,9 @@ const saveUser = async () => {
   }
 }
 
+/**
+ * 删除用户
+ */
 const deleteUser = async (user: UserType) => {
   if (user.role === 'ADMIN') {
     ElMessage.warning('不能删除管理员')
@@ -92,14 +112,23 @@ const deleteUser = async (user: UserType) => {
   }
 }
 
+/**
+ * 获取角色样式
+ */
 const getRoleClass = (role: string) => {
   return role === 'ADMIN' ? 'text-red-600 bg-red-100' : 'text-green-600 bg-green-100'
 }
 
+/**
+ * 获取角色文本
+ */
 const getRoleText = (role: string) => {
   return role === 'ADMIN' ? '管理员' : '普通用户'
 }
 
+/**
+ * 格式化日期
+ */
 const formatDate = (dateStr: string) => {
   if (!dateStr) return '-'
   const date = new Date(dateStr)
@@ -113,6 +142,7 @@ onMounted(() => {
 
 <template>
   <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+    <!-- 页面头部 -->
     <div class="p-6 border-b border-gray-100">
       <div class="flex items-center justify-between">
         <h2 class="text-xl font-semibold text-gray-800">用户管理</h2>
@@ -126,6 +156,7 @@ onMounted(() => {
       </div>
     </div>
     
+    <!-- 用户表格 -->
     <div class="p-6">
       <ElTable 
         :data="users" 
@@ -160,6 +191,7 @@ onMounted(() => {
         <ElTableColumn label="操作" width="180">
           <template #default="scope">
             <div class="flex items-center gap-2">
+              <!-- 编辑按钮 -->
               <button 
                 @click="openEditModal(scope.row)"
                 class="flex items-center gap-1 px-3 py-1.5 text-sm bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors"
@@ -167,6 +199,7 @@ onMounted(() => {
                 <Edit class="w-4 h-4" />
                 编辑
               </button>
+              <!-- 删除按钮（不能删除管理员） -->
               <button 
                 v-if="scope.row.role !== 'ADMIN'"
                 @click="deleteUser(scope.row)"
@@ -182,6 +215,7 @@ onMounted(() => {
     </div>
   </div>
   
+  <!-- 用户编辑模态框 -->
   <ElModal 
     v-model="showModal" 
     :title="editingUser ? '编辑用户' : '新建用户'"
@@ -195,7 +229,11 @@ onMounted(() => {
         <ElInput v-model="form.email" type="email" placeholder="请输入邮箱" />
       </ElFormItem>
       <ElFormItem label="密码" prop="password">
-        <ElInput v-model="form.password" type="password" :placeholder="editingUser ? '留空表示不修改密码' : '请输入密码'" />
+        <ElInput 
+          v-model="form.password" 
+          type="password" 
+          :placeholder="editingUser ? '留空表示不修改密码' : '请输入密码'" 
+        />
       </ElFormItem>
       <ElFormItem label="角色" prop="role">
         <ElSelect v-model="form.role" placeholder="请选择角色">

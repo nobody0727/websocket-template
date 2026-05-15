@@ -9,12 +9,18 @@ import type { Task, Notification } from '@/types'
 const router = useRouter()
 const notificationStore = useNotificationStore()
 
+// 统计数据
 const todoCount = ref(0)
 const doneCount = ref(0)
 const notificationCount = ref(0)
+
+// 近期数据
 const recentTasks = ref<Task[]>([])
 const recentNotifications = ref<Notification[]>([])
 
+/**
+ * 获取统计数据（待办数量、已完成数量、未读通知数量）
+ */
 const fetchStats = async () => {
   try {
     const [todoRes, doneRes, notifRes] = await Promise.all([
@@ -26,36 +32,51 @@ const fetchStats = async () => {
     doneCount.value = doneRes.data
     notificationCount.value = notifRes.data
   } catch (error) {
-    console.error('Failed to fetch stats:', error)
+    console.error('获取统计数据失败:', error)
   }
 }
 
+/**
+ * 获取近期任务
+ */
 const fetchRecentTasks = async () => {
   try {
     const response = await axios.get('/api/tasks', { params: { page: 0, size: 5 } })
     recentTasks.value = response.data.content
   } catch (error) {
-    console.error('Failed to fetch tasks:', error)
+    console.error('获取近期任务失败:', error)
   }
 }
 
+/**
+ * 获取近期通知
+ */
 const fetchRecentNotifications = async () => {
   try {
     const response = await axios.get('/api/notifications', { params: { page: 0, size: 5 } })
     recentNotifications.value = response.data.content
   } catch (error) {
-    console.error('Failed to fetch notifications:', error)
+    console.error('获取近期通知失败:', error)
   }
 }
 
+/**
+ * 跳转到任务管理页面
+ */
 const goToTasks = () => {
   router.push('/tasks')
 }
 
+/**
+ * 跳转到通知中心
+ */
 const goToNotifications = () => {
   router.push('/notifications')
 }
 
+/**
+ * 获取优先级样式
+ */
 const getPriorityClass = (priority: string) => {
   switch (priority) {
     case 'HIGH': return 'bg-red-100 text-red-600'
@@ -65,6 +86,9 @@ const getPriorityClass = (priority: string) => {
   }
 }
 
+/**
+ * 获取优先级文本
+ */
 const getPriorityText = (priority: string) => {
   switch (priority) {
     case 'HIGH': return '高'
@@ -74,6 +98,9 @@ const getPriorityText = (priority: string) => {
   }
 }
 
+/**
+ * 获取通知类型样式
+ */
 const getNotificationTypeClass = (type: string) => {
   switch (type) {
     case 'SUCCESS': return 'bg-green-100 text-green-600'
@@ -83,11 +110,23 @@ const getNotificationTypeClass = (type: string) => {
   }
 }
 
+/**
+ * 格式化日期
+ */
 const formatDate = (dateStr: string) => {
   const date = new Date(dateStr)
   return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
+/**
+ * 计算任务完成率
+ */
+const completionRate = () => {
+  const total = todoCount.value + doneCount.value
+  return total > 0 ? Math.round((doneCount.value / total) * 100) : 0
+}
+
+// 页面加载时获取数据
 onMounted(() => {
   fetchStats()
   fetchRecentTasks()
@@ -97,7 +136,9 @@ onMounted(() => {
 
 <template>
   <div class="space-y-6">
+    <!-- 统计卡片区域 -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <!-- 待办任务卡片 -->
       <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
         <div class="flex items-center justify-between">
           <div>
@@ -113,6 +154,7 @@ onMounted(() => {
         </button>
       </div>
       
+      <!-- 已完成卡片 -->
       <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
         <div class="flex items-center justify-between">
           <div>
@@ -123,17 +165,19 @@ onMounted(() => {
             <CheckCircle2 class="w-6 h-6 text-green-600" />
           </div>
         </div>
+        <!-- 完成率进度条 -->
         <div class="mt-4">
           <div class="w-full bg-gray-200 rounded-full h-2">
             <div 
               class="bg-green-500 h-2 rounded-full transition-all"
-              :style="{ width: `${doneCount + todoCount > 0 ? (doneCount / (doneCount + todoCount)) * 100 : 0}%` }"
+              :style="{ width: completionRate() + '%' }"
             ></div>
           </div>
-          <p class="text-xs text-gray-500 mt-2">完成率: {{ doneCount + todoCount > 0 ? Math.round((doneCount / (doneCount + todoCount)) * 100) : 0 }}%</p>
+          <p class="text-xs text-gray-500 mt-2">完成率: {{ completionRate() }}%</p>
         </div>
       </div>
       
+      <!-- 未读通知卡片 -->
       <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
         <div class="flex items-center justify-between">
           <div>
@@ -142,6 +186,7 @@ onMounted(() => {
           </div>
           <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center relative">
             <Bell class="w-6 h-6 text-purple-600" />
+            <!-- 未读数量徽章 -->
             <span 
               v-if="notificationCount > 0"
               class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center"
@@ -155,6 +200,7 @@ onMounted(() => {
         </button>
       </div>
       
+      <!-- 总任务数卡片 -->
       <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
         <div class="flex items-center justify-between">
           <div>
@@ -174,7 +220,9 @@ onMounted(() => {
       </div>
     </div>
     
+    <!-- 近期数据区域 -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- 近期任务列表 -->
       <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg font-semibold text-gray-800">最近任务</h2>
@@ -197,12 +245,14 @@ onMounted(() => {
               </span>
             </div>
           </div>
+          <!-- 空状态 -->
           <div v-if="recentTasks.length === 0" class="text-center py-8 text-gray-500">
             暂无任务
           </div>
         </div>
       </div>
       
+      <!-- 近期通知列表 -->
       <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg font-semibold text-gray-800">最近通知</h2>
@@ -229,6 +279,7 @@ onMounted(() => {
             </div>
             <p class="text-xs text-gray-400 mt-2">{{ formatDate(notification.createdAt) }}</p>
           </div>
+          <!-- 空状态 -->
           <div v-if="recentNotifications.length === 0" class="text-center py-8 text-gray-500">
             暂无通知
           </div>
