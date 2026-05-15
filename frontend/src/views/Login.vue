@@ -10,7 +10,7 @@ const authStore = useAuthStore()
 
 // 默认填充的管理员账号密码
 const username = ref('admin')
-const password = ref('admin')
+const password = ref('password123')
 const showPassword = ref(false)
 const loading = ref(false)
 
@@ -110,7 +110,7 @@ const togglePassword = () => {
       <!-- 提示信息 -->
       <div class="mt-6 text-center">
         <p class="text-sm text-gray-500">
-          默认账号: admin / 密码: admin
+          测试账号: admin / password123
         </p>
       </div>
     </div>
