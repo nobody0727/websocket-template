@@ -2,18 +2,23 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import axios from '@/utils/axios'
-import { ElMessage, ElModal, ElForm, ElFormItem, ElInput, ElSelect, ElDatePicker, ElButton, ElTable, ElTableColumn, ElPagination } from 'element-plus'
+import { ElMessage, ElTable, ElTableColumn, ElPagination } from 'element-plus'
 import { Plus, Edit, Trash2, CheckCircle, ArrowLeft } from 'lucide-vue-next'
 import type { Task, CreateTaskRequest } from '@/types'
 
 const route = useRoute()
 
+// 任务列表和分页
 const tasks = ref<Task[]>([])
 const total = ref(0)
 const page = ref(1)
 const size = ref(10)
+
+// 模态框状态
 const showModal = ref(false)
 const editingTask = ref<Task | null>(null)
+
+// 表单数据
 const form = ref<CreateTaskRequest>({
   title: '',
   description: '',
@@ -21,12 +26,18 @@ const form = ref<CreateTaskRequest>({
   deadline: ''
 })
 
+/**
+ * 根据路由路径判断当前显示的任务状态
+ */
 const statusFilter = computed(() => {
   if (route.path === '/tasks/todo') return 'TODO'
   if (route.path === '/tasks/done') return 'DONE'
   return ''
 })
 
+/**
+ * 获取任务列表
+ */
 const fetchTasks = async () => {
   try {
     const params: Record<string, unknown> = {
@@ -40,10 +51,13 @@ const fetchTasks = async () => {
     tasks.value = response.data.content
     total.value = response.data.totalElements
   } catch (error) {
-    console.error('Failed to fetch tasks:', error)
+    console.error('获取任务列表失败:', error)
   }
 }
 
+/**
+ * 打开新建任务模态框
+ */
 const openCreateModal = () => {
   editingTask.value = null
   form.value = {
@@ -55,6 +69,9 @@ const openCreateModal = () => {
   showModal.value = true
 }
 
+/**
+ * 打开编辑任务模态框
+ */
 const openEditModal = (task: Task) => {
   editingTask.value = task
   form.value = {
@@ -66,6 +83,9 @@ const openEditModal = (task: Task) => {
   showModal.value = true
 }
 
+/**
+ * 保存任务（新建或更新）
+ */
 const saveTask = async () => {
   if (!form.value.title) {
     ElMessage.warning('请输入任务标题')
@@ -87,6 +107,9 @@ const saveTask = async () => {
   }
 }
 
+/**
+ * 完成任务
+ */
 const completeTask = async (task: Task) => {
   try {
     await axios.put(`/api/tasks/${task.id}/complete`)
@@ -97,6 +120,9 @@ const completeTask = async (task: Task) => {
   }
 }
 
+/**
+ * 删除任务
+ */
 const deleteTask = async (task: Task) => {
   try {
     await axios.delete(`/api/tasks/${task.id}`)
@@ -107,6 +133,9 @@ const deleteTask = async (task: Task) => {
   }
 }
 
+/**
+ * 获取优先级样式
+ */
 const getPriorityClass = (priority: string) => {
   switch (priority) {
     case 'HIGH': return 'text-red-600 bg-red-100'
@@ -116,6 +145,9 @@ const getPriorityClass = (priority: string) => {
   }
 }
 
+/**
+ * 获取优先级文本
+ */
 const getPriorityText = (priority: string) => {
   switch (priority) {
     case 'HIGH': return '高优先级'
@@ -125,12 +157,16 @@ const getPriorityText = (priority: string) => {
   }
 }
 
+/**
+ * 格式化日期
+ */
 const formatDate = (dateStr: string) => {
   if (!dateStr) return '-'
   const date = new Date(dateStr)
   return date.toLocaleDateString('zh-CN')
 }
 
+// 监听路由变化，重新加载任务
 watch(() => route.path, () => {
   page.value = 1
   fetchTasks()
@@ -143,9 +179,11 @@ onMounted(() => {
 
 <template>
   <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+    <!-- 页面头部 -->
     <div class="p-6 border-b border-gray-100">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-4">
+          <!-- 返回按钮 -->
           <button 
             v-if="statusFilter"
             @click="$router.push('/tasks')"
@@ -158,6 +196,7 @@ onMounted(() => {
           </h2>
         </div>
         <div class="flex items-center gap-3">
+          <!-- 状态切换按钮 -->
           <router-link 
             v-if="statusFilter !== 'TODO'"
             to="/tasks/todo"
@@ -172,6 +211,7 @@ onMounted(() => {
           >
             已完成
           </router-link>
+          <!-- 新建任务按钮 -->
           <button 
             @click="openCreateModal"
             class="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600 transition-colors"
@@ -183,6 +223,7 @@ onMounted(() => {
       </div>
     </div>
     
+    <!-- 任务表格 -->
     <div class="p-6">
       <ElTable 
         :data="tasks" 
@@ -212,6 +253,7 @@ onMounted(() => {
         <ElTableColumn label="操作" width="200">
           <template #default="scope">
             <div class="flex items-center gap-2">
+              <!-- 完成按钮（仅待办任务显示） -->
               <button 
                 v-if="scope.row.status === 'TODO'"
                 @click="completeTask(scope.row)"
@@ -220,6 +262,7 @@ onMounted(() => {
                 <CheckCircle class="w-4 h-4" />
                 完成
               </button>
+              <!-- 编辑按钮 -->
               <button 
                 @click="openEditModal(scope.row)"
                 class="flex items-center gap-1 px-3 py-1.5 text-sm bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors"
@@ -227,6 +270,7 @@ onMounted(() => {
                 <Edit class="w-4 h-4" />
                 编辑
               </button>
+              <!-- 删除按钮 -->
               <button 
                 @click="deleteTask(scope.row)"
                 class="flex items-center gap-1 px-3 py-1.5 text-sm bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
@@ -239,6 +283,7 @@ onMounted(() => {
         </ElTableColumn>
       </ElTable>
       
+      <!-- 分页组件 -->
       <div class="flex justify-center mt-6">
         <ElPagination
           v-model:current-page="page"
@@ -253,6 +298,7 @@ onMounted(() => {
     </div>
   </div>
   
+  <!-- 任务编辑模态框 -->
   <ElModal 
     v-model="showModal" 
     :title="editingTask ? '编辑任务' : '新建任务'"

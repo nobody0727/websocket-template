@@ -1,3 +1,4 @@
+<script setup lang="ts">
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
@@ -56,16 +57,26 @@ const router = createRouter({
   ]
 })
 
+/**
+ * 路由守卫
+ * 验证用户是否已登录，是否有权限访问该路由
+ */
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore()
   
+  // 检查路由是否需要登录
   if (to.meta.requiresAuth && !authStore.isLoggedIn) {
     next('/login')
-  } else if (to.meta.requiresAdmin && authStore.user?.role !== 'ADMIN') {
+  } 
+  // 检查路由是否需要管理员权限
+  else if (to.meta.requiresAdmin && authStore.user?.role !== 'ADMIN') {
     next('/')
-  } else if (to.path === '/login' && authStore.isLoggedIn) {
+  } 
+  // 如果已登录且访问登录页，跳转到首页
+  else if (to.path === '/login' && authStore.isLoggedIn) {
     next('/')
-  } else {
+  } 
+  else {
     next()
   }
 })
